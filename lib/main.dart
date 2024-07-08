@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: SafeArea(
           child: Scaffold(
-            backgroundColor: Color.fromARGB(255, 12, 12, 12),
+            backgroundColor: Color.fromARGB(255, 31, 31, 31),
             body: LoginScreen(),
           ),
         ),

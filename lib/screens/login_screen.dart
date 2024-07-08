@@ -10,7 +10,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  var riveUrl = 'assets/animated_login_character.riv';
+  final riveUrl = 'assets/animated_login_character.riv';
   StateMachineController? stateMachineController;
   SMITrigger? failTrigger;
   SMITrigger? successTrigger;
@@ -19,36 +19,67 @@ class _LoginScreenState extends State<LoginScreen> {
   SMINumber? lookNum;
   Artboard? artboard;
 
-  var emailController = TextEditingController();
-  var passwordController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final emailFocusNode = FocusNode();
+  final passwordFocusNode = FocusNode();
+
+  Color emailBorderColor = Colors.white;
+  Color passwordBorderColor = Colors.white;
 
   @override
   void initState() {
-    rootBundle.load(riveUrl).then((value) {
-      final file = RiveFile.import(value);
-      final art = file.mainArtboard;
-      stateMachineController =
-          StateMachineController.fromArtboard(art, 'Login Machine');
-
-      if (stateMachineController != null) {
-        art.addController(stateMachineController!);
-        for (var element in stateMachineController!.inputs) {
-          if (element.name == 'isChecking') {
-            isChecking = element as SMIBool;
-          } else if (element.name == 'isHandsUp') {
-            isHandsUp = element as SMIBool;
-          } else if (element.name == 'trigSuccess') {
-            successTrigger = element as SMITrigger;
-          } else if (element.name == 'trigFail') {
-            failTrigger = element as SMITrigger;
-          } else if (element.name == 'numLook') {
-            lookNum = element as SMINumber;
-          }
-        }
-      }
-      setState(() => artboard = art);
-    });
     super.initState();
+    _loadRiveFile();
+
+    emailFocusNode.addListener(_handleFocusChange);
+    passwordFocusNode.addListener(_handleFocusChange);
+  }
+
+  void _handleFocusChange() {
+    if (!emailFocusNode.hasFocus && !passwordFocusNode.hasFocus) {
+      isChecking?.change(false);
+      isHandsUp?.change(false);
+    }
+  }
+
+  Future<void> _loadRiveFile() async {
+    final data = await rootBundle.load(riveUrl);
+    final file = RiveFile.import(data);
+    final art = file.mainArtboard;
+    stateMachineController =
+        StateMachineController.fromArtboard(art, 'Login Machine');
+
+    if (stateMachineController != null) {
+      art.addController(stateMachineController!);
+      _initializeStateMachineInputs();
+    }
+
+    setState(() {
+      artboard = art;
+    });
+  }
+
+  void _initializeStateMachineInputs() {
+    for (var element in stateMachineController!.inputs) {
+      switch (element.name) {
+        case 'isChecking':
+          isChecking = element as SMIBool;
+          break;
+        case 'isHandsUp':
+          isHandsUp = element as SMIBool;
+          break;
+        case 'trigSuccess':
+          successTrigger = element as SMITrigger;
+          break;
+        case 'trigFail':
+          failTrigger = element as SMITrigger;
+          break;
+        case 'numLook':
+          lookNum = element as SMINumber;
+          break;
+      }
+    }
   }
 
   void lookAround() {
@@ -57,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
     lookNum?.change(0);
   }
 
-  void moveEyes(value) {
+  void moveEyes(String value) {
     lookNum?.change(value.length.toDouble());
   }
 
@@ -66,16 +97,26 @@ class _LoginScreenState extends State<LoginScreen> {
     isChecking?.change(false);
   }
 
-  void loginClick() {
-    isChecking?.change(false);
+  void cancelCurrentAnimation() {
     isHandsUp?.change(false);
-    if (emailController.text == 'email' &&
-        passwordController.text == 'password') {
-      successTrigger?.fire();
-    } else {
-      failTrigger?.fire();
-    }
-    setState(() {});
+    isChecking?.change(false);
+  }
+
+  void loginClick() {
+    cancelCurrentAnimation();
+
+    setState(() {
+      if (emailController.text == 'email' &&
+          passwordController.text == 'password') {
+        successTrigger?.fire();
+        emailBorderColor = Colors.green;
+        passwordBorderColor = Colors.green;
+      } else {
+        failTrigger?.fire();
+        emailBorderColor = Colors.red;
+        passwordBorderColor = Colors.red;
+      }
+    });
   }
 
   @override
@@ -88,14 +129,20 @@ class _LoginScreenState extends State<LoginScreen> {
             if (artboard != null)
               Column(
                 children: [
-                  SizedBox(
+                  Container(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white,
+                          width: 2.0,
+                        ),
+                      ),
+                      color: Colors.black,
+                    ),
                     height: 300,
                     width: 500,
-                    child: Rive(
-                      artboard: artboard!,
-                    ),
+                    child: Rive(artboard: artboard!),
                   ),
-                  const Divider(height: 1),
                 ],
               ),
             Padding(
@@ -104,41 +151,65 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   TextField(
                     controller: emailController,
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
-                    decoration: const InputDecoration(
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
                       labelText: 'Email',
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(
+                        color: Colors.white,
+                      ),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: emailBorderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: emailBorderColor),
+                      ),
                     ),
-                    onChanged: (value) {
-                      moveEyes(value);
-                    },
+                    onChanged: moveEyes,
                     onTap: lookAround,
+                    focusNode: emailFocusNode,
                   ),
                   const SizedBox(height: 32),
                   TextField(
                     controller: passwordController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      border: OutlineInputBorder(),
+                      labelStyle: const TextStyle(
+                        color: Colors.white,
+                      ),
+                      border: const OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: passwordBorderColor),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: passwordBorderColor),
+                      ),
                     ),
-                    style: const TextStyle(
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(color: Colors.white),
                     obscureText: true,
                     onTap: handUpOnEyes,
+                    onChanged: (value) => handUpOnEyes,
+                    focusNode: passwordFocusNode,
                   ),
                   const SizedBox(height: 32),
                   ElevatedButton(
-                    onPressed: () {
-                      loginClick();
-                    },
-                    child: const Text('Iniciar Sesión'),
+                    onPressed: loginClick,
+                    style: const ButtonStyle(),
+                    child: const Text(
+                      'Iniciar Sesión',
+                      style: TextStyle(
+                        color: Color(0xFFB04863),
+                      ),
+                    ),
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: const Text('¿No tienes cuenta? Regístrate'),
+                    child: const Text(
+                      '¿No tienes cuenta? Regístrate',
+                      style: TextStyle(
+                        color: Color(0xFFB04863),
+                      ),
+                    ),
                   ),
                 ],
               ),
