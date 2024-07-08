@@ -127,23 +127,22 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             if (artboard != null)
-              Column(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Colors.white,
-                          width: 2.0,
-                        ),
-                      ),
-                      color: Colors.black,
+              Container(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white,
+                      width: 2.0,
                     ),
-                    height: 300,
-                    width: 500,
-                    child: Rive(artboard: artboard!),
                   ),
-                ],
+                  color: Colors.black,
+                ),
+                height: 300,
+                width: 500,
+                child: Rive(
+                  artboard: artboard!,
+                  alignment: Alignment.bottomCenter,
+                ),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
